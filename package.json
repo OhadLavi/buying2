@@ -1,0 +1,17 @@
+{
+  "name": "deals-aggregator",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "server": "python server/app.py",
+    "client": "npm start --prefix client/buying",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
+
+
