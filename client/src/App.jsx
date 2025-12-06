@@ -13,8 +13,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('all');
   const [isRTL, setIsRTL] = useState(true); // Default to RTL
   const [viewMode, setViewMode] = useState(() => {
-    // Always default to 'cards', ignore any localStorage
-    return 'cards';
+    // Default to 'tiles' so ⊞ (grid icon) is active by default
+    return 'tiles';
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
@@ -167,16 +167,16 @@ export default function App() {
             </div>
             <div className="view-toggle">
               <button
-                className={`view-btn ${viewMode === 'cards' ? 'active' : ''}`}
-                onClick={() => setViewMode('cards')}
-                title="Card View"
+                className={`view-btn ${viewMode === 'tiles' ? 'active' : ''}`}
+                onClick={() => setViewMode('tiles')}
+                title="Grid View"
               >
                 ⊞
               </button>
               <button
-                className={`view-btn ${viewMode === 'tiles' ? 'active' : ''}`}
-                onClick={() => setViewMode('tiles')}
-                title="Tile View"
+                className={`view-btn ${viewMode === 'cards' ? 'active' : ''}`}
+                onClick={() => setViewMode('cards')}
+                title="List View"
               >
                 ☰
               </button>
@@ -244,7 +244,7 @@ export default function App() {
               {sourceErrors[activeTab]}
             </div>
           ) : getActiveTabCount() > 0 ? (
-            <div className={`deals-grid ${viewMode === 'tiles' ? 'tiles-view' : 'cards-view'}`}>
+            <div className={`deals-grid ${viewMode === 'cards' ? 'cards-view' : 'tiles-view'}`}>
               {getActiveTabData().map((deal, idx) => (
                 <Card 
                   key={deal.link || deal.title || `${deal.source || ''}-${idx}`} 
