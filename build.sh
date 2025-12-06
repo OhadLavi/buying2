@@ -1,20 +1,14 @@
 #!/bin/bash
-# Build script for Render deployment
+set -e
 
-echo "Installing Python dependencies..."
+echo "=== Installing Python dependencies ==="
 pip install -r requirements.txt
 
-echo "Installing Playwright browsers..."
+echo "=== Installing Playwright browsers ==="
 playwright install chromium
+playwright install-deps chromium
 
-echo "Installing Node.js dependencies..."
+echo "=== Installing Node.js dependencies ==="
 npm install
 
-echo "Building React app..."
-cd client/buying
-npm install
-npm run build
-cd ../..
-
-echo "Build complete!"
-
+echo "=== Build complete ==="

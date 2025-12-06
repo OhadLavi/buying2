@@ -5,12 +5,15 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       playwright install chromium
+      playwright install-deps chromium
       npm install
-      cd client/buying && npm install && npm run build && cd ../..
     startCommand: python server/app.py
     envVars:
       - key: PORT
-        value: 3001
+        fromService:
+          type: web
+          name: deals-aggregator
+          property: port
       - key: PYTHON_VERSION
         value: 3.13
 
