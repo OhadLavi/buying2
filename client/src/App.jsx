@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Card from './components/Card';
+import './App.css';
 
-const DEFAULT_DATA = { deal4real: [], zuzu: [], buywithus: [] };
+const DEFAULT_DATA = { deal4real: [], zuzu: [], buywithus: [], beedeals: [] };
 
 export default function App() {
   const [data, setData] = useState(DEFAULT_DATA);
@@ -9,6 +10,14 @@ export default function App() {
   const [error, setError] = useState(null);
   const [sourceErrors, setSourceErrors] = useState({});
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [activeTab, setActiveTab] = useState('all');
+  const [isRTL, setIsRTL] = useState(true); // Default to RTL
+  const [viewMode, setViewMode] = useState(() => {
+    // Always default to 'cards', ignore any localStorage
+    return 'cards';
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
 
   const apiBase = useMemo(() => {
     const env = process.env.REACT_APP_API_URL;
@@ -25,7 +34,7 @@ export default function App() {
     setError(null);
     setSourceErrors({});
     try {
-      const url = `${apiBase}/scrape?sources=deal4real,zuzu,buywithus`;
+      const url = `${apiBase}/scrape?sources=deal4real,zuzu,buywithus,beedeals`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
@@ -35,6 +44,7 @@ export default function App() {
         deal4real: Array.isArray(json.deal4real) ? json.deal4real : [],
         zuzu: Array.isArray(json.zuzu) ? json.zuzu : [],
         buywithus: Array.isArray(json.buywithus) ? json.buywithus : [],
+        beedeals: Array.isArray(json.beedeals) ? json.beedeals : [],
       };
       
       // Set per-source errors if array is empty (may indicate scraping failure)
@@ -47,6 +57,9 @@ export default function App() {
       }
       if (newData.buywithus.length === 0) {
         newSourceErrors.buywithus = 'No deals found or scraping failed';
+      }
+      if (newData.beedeals.length === 0) {
+        newSourceErrors.beedeals = 'No deals found or scraping failed';
       }
       
       setData(newData);
@@ -65,9 +78,11 @@ export default function App() {
   }, []);
 
   const sections = [
+    { key: 'all', title: 'All', titleRTL: 'הכל' },
     { key: 'deal4real', title: 'Deal4Real' },
     { key: 'zuzu', title: 'Zuzu Deals' },
     { key: 'buywithus', title: 'BuyWithUs' },
+    { key: 'beedeals', title: 'Bee Deals' },
   ];
 
   const formatTime = (d) => {
@@ -76,47 +91,175 @@ export default function App() {
     return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
 
+  // Get all deals when "all" tab is selected
+  const getAllDeals = () => {
+    const allDeals = [];
+    sections.forEach(section => {
+      if (section.key !== 'all' && data[section.key]) {
+        data[section.key].forEach(deal => {
+          allDeals.push({ ...deal, source: section.key });
+        });
+      }
+    });
+    return allDeals;
+  };
+
+  const getActiveTabData = () => {
+    let deals = [];
+    if (activeTab === 'all') {
+      deals = getAllDeals();
+    } else {
+      deals = data[activeTab] || [];
+    }
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      deals = deals.filter(deal => {
+        const title = (deal.title || '').toLowerCase();
+        const price = (deal.price || '').toLowerCase();
+        return title.includes(query) || price.includes(query);
+      });
+    }
+    
+    return deals;
+  };
+
+  const getActiveTabCount = () => {
+    return getActiveTabData().length;
+  };
+
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto', padding: 16 }}>
-      <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ fontSize: 20, margin: 0 }}>Deals Aggregator</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 12, color: '#6b7280' }}>Last updated {formatTime(lastUpdated)}</span>
-          <button onClick={fetchData} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff' }}>
-            Refresh
-          </button>
+    <div className={`app-container ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="app-content">
+        <header className="app-header">
+          <h1 className="app-title">{isRTL ? 'אוגר הדילים' : 'Deals Aggregator'}</h1>
+          <div className="header-controls">
+            <div className={`search-container ${isSearchExpanded ? 'expanded' : ''}`}>
+              <button
+                className="search-icon-btn"
+                onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+                title={isRTL ? 'חפש' : 'Search'}
+              >
+                🔍
+              </button>
+              {isSearchExpanded && (
+                <>
+                  <input
+                    type="text"
+                    className="search-input"
+                    placeholder={isRTL ? 'חפש דילים...' : 'Search deals...'}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    autoFocus
+                  />
+                  {searchQuery && (
+                    <button
+                      className="search-clear"
+                      onClick={() => setSearchQuery('')}
+                      title={isRTL ? 'נקה' : 'Clear'}
+                    >
+                      ×
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="view-toggle">
+              <button
+                className={`view-btn ${viewMode === 'cards' ? 'active' : ''}`}
+                onClick={() => setViewMode('cards')}
+                title="Card View"
+              >
+                ⊞
+              </button>
+              <button
+                className={`view-btn ${viewMode === 'tiles' ? 'active' : ''}`}
+                onClick={() => setViewMode('tiles')}
+                title="Tile View"
+              >
+                ☰
+              </button>
+            </div>
+            <button 
+              className="toggle-rtl" 
+              onClick={() => setIsRTL(!isRTL)}
+              title={isRTL ? 'Switch to LTR' : 'Switch to RTL'}
+            >
+              {isRTL ? '← LTR' : 'RTL →'}
+            </button>
+            <button 
+              className="refresh-btn" 
+              onClick={fetchData}
+              title={lastUpdated ? `Last updated ${formatTime(lastUpdated)}` : 'Refresh'}
+            >
+              Refresh
+            </button>
+          </div>
+        </header>
+
+        {error && (
+          <div className="error-message">Error: {String(error)}</div>
+        )}
+
+        <div className="tabs-container">
+          {sections.map((sec) => {
+            // Show filtered count if this is the active tab and search is active
+            let count;
+            if (activeTab === sec.key && searchQuery.trim()) {
+              count = getActiveTabData().length;
+            } else {
+              count = sec.key === 'all' 
+                ? getAllDeals().length 
+                : (data[sec.key]?.length || 0);
+            }
+            const displayTitle = (sec.key === 'all' && isRTL && sec.titleRTL) 
+              ? sec.titleRTL 
+              : sec.title;
+            return (
+              <button
+                key={sec.key}
+                className={`tab-button ${activeTab === sec.key ? 'active' : ''}`}
+                onClick={() => setActiveTab(sec.key)}
+              >
+                {displayTitle}
+                {count > 0 && (
+                  <span className="tab-badge">{count}</span>
+                )}
+                {activeTab === sec.key && <span className="tab-indicator" />}
+              </button>
+            );
+          })}
         </div>
-      </header>
 
-      {error && (
-        <div style={{ marginTop: 12, color: '#b91c1c' }}>Error: {String(error)}</div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16, marginTop: 16 }}>
-        {sections.map((sec) => (
-          <section key={sec.key}>
-            <h2 style={{ fontSize: 16, margin: '8px 0' }}>{sec.title}</h2>
-            {loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-                <div style={{ height: 60, background: '#f3f4f6', borderRadius: 8 }} />
-                <div style={{ height: 60, background: '#f3f4f6', borderRadius: 8 }} />
-                <div style={{ height: 60, background: '#f3f4f6', borderRadius: 8 }} />
-              </div>
-            ) : sourceErrors[sec.key] ? (
-              <div style={{ color: '#dc2626', padding: 8, background: '#fef2f2', borderRadius: 6 }}>
-                {sourceErrors[sec.key]}
-              </div>
-            ) : data[sec.key]?.length ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
-                {data[sec.key].map((deal, idx) => (
-                  <Card key={deal.link || deal.title || idx} deal={deal} />
-                ))}
-              </div>
-            ) : (
-              <div style={{ color: '#6b7280' }}>No deals found right now.</div>
-            )}
-          </section>
-        ))}
+        <div className="tab-content">
+          {loading ? (
+            <div className="loading-skeleton">
+              <div className="skeleton-item" />
+              <div className="skeleton-item" />
+              <div className="skeleton-item" />
+            </div>
+          ) : activeTab !== 'all' && sourceErrors[activeTab] ? (
+            <div className="error-box">
+              {sourceErrors[activeTab]}
+            </div>
+          ) : getActiveTabCount() > 0 ? (
+            <div className={`deals-grid ${viewMode === 'tiles' ? 'tiles-view' : 'cards-view'}`}>
+              {getActiveTabData().map((deal, idx) => (
+                <Card 
+                  key={deal.link || deal.title || `${deal.source || ''}-${idx}`} 
+                  deal={deal} 
+                  isRTL={isRTL}
+                  viewMode={viewMode}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="no-deals">
+              {isRTL ? 'לא נמצאו דילים כרגע.' : 'No deals found right now.'}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

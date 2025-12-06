@@ -52,6 +52,7 @@ SOURCE_MAP: Dict[str, Dict[str, str]] = {
     "deal4real": {"url": "https://deal4real.co.il/", "selector": ".product-card-wrapper .product-card, .product-card"},
     "zuzu": {"url": "https://zuzu.deals/", "selector": ".col_item"},
     "buywithus": {"url": "https://buywithus.org/", "selector": ".col_item"},
+    "beedeals": {"url": "https://il.bee.deals/dashboard", "selector": ".pin.nfDealItemsPin"},
 }
 
 WHITELIST_HOSTS = {
@@ -61,6 +62,8 @@ WHITELIST_HOSTS = {
     "www.zuzu.deals",
     "buywithus.org",
     "www.buywithus.org",
+    "il.bee.deals",
+    "www.il.bee.deals",
 }
 
 price_regex = re.compile(r"(?:₪|\$|€)?\s?\d[\d,\.]*")
@@ -290,6 +293,33 @@ def extract_items(html: str, base_url: str, selector: str, source_id: Optional[s
                             title = candidate
                             break
         
+        # For beedeals: title is in .pinMenuCenter span.ng-binding or bo-text attribute
+        if not title and source_id == "beedeals":
+            pin_menu_center = node.select_one(".pinMenuCenter")
+            if pin_menu_center:
+                # Try span with ng-binding class
+                title_span = pin_menu_center.find("span", class_="ng-binding")
+                if title_span:
+                    title = normalize_whitespace(title_span.get_text())
+                # Also try any span in pinMenuCenter
+                if not title:
+                    all_spans = pin_menu_center.find_all("span")
+                    for span in all_spans:
+                        span_text = normalize_whitespace(span.get_text())
+                        if span_text and len(span_text) > 3:
+                            title = span_text
+                            break
+                # Also try bo-text attribute if present
+                if not title:
+                    bo_text = pin_menu_center.get("bo-text")
+                    if bo_text:
+                        title = normalize_whitespace(bo_text)
+                # Fallback: get all text from pinMenuCenter
+                if not title:
+                    all_text = normalize_whitespace(pin_menu_center.get_text())
+                    if all_text and len(all_text) > 3:
+                        title = all_text
+        
         # Standard approach for other sources or if deal4real didn't find anything
         if not title:
             # Try h1/h2/h3
@@ -346,7 +376,29 @@ def extract_items(html: str, base_url: str, selector: str, source_id: Optional[s
             title = normalize_whitespace(title)
         
         # Extract price first, then clean any prices from title
-        price = extract_price_text(node, source_id=source_id)
+        price = None  # Initialize price variable
+        
+        # For beedeals: price is in .pinPrice span text
+        if source_id == "beedeals":
+            pin_price = node.select_one(".pinPrice")
+            if pin_price:
+                price_link = pin_price.find("a")
+                if price_link:
+                    price_text = normalize_whitespace(price_link.get_text())
+                    # Filter out invalid prices like "$0.0" or "0.0"
+                    if price_text and price_text not in ["$0.0", "$0", "0.0", "0", "₪0", "€0"]:
+                        # Extract price pattern from text
+                        price_match = re.search(r'(?:₪|\$|€|USD|ILS)?\s?\d[\d,\.]+', price_text)
+                        if price_match:
+                            price = price_match.group(0).strip()
+                        elif price_text and len(price_text) > 2:  # Only use if it's a meaningful price string
+                            price = price_text
+            # Fallback to standard extraction if beedeals-specific extraction didn't work
+            if not price:
+                price = extract_price_text(node, source_id=source_id)
+        else:
+            # For all other sources, use standard price extraction
+            price = extract_price_text(node, source_id=source_id)
         
         # If price is just a single digit without currency, it's likely wrong (e.g., "7" from "Black-7")
         if price and len(price.strip()) == 1 and price.strip().isdigit():
@@ -424,6 +476,18 @@ def extract_items(html: str, base_url: str, selector: str, source_id: Optional[s
                         image = resolve_url(base_url, img_src, allow_external=True)
                         logger.debug(f"deal4real image extracted: {image} from src={img_src}")
         
+        # For beedeals: images are in .image_holder > img with bo-src-i or src
+        if not image and source_id == "beedeals":
+            image_holder = node.select_one(".image_holder")
+            if image_holder:
+                img_el = image_holder.find("img")
+                if img_el:
+                    # Try bo-src-i attribute first (bindonce directive), then src
+                    img_src = img_el.get("bo-src-i") or img_el.get("src") or img_el.get("data-src") or img_el.get("data-lazy-src")
+                    if img_src and img_src.strip() and not img_src.startswith("data:"):
+                        image = resolve_url(base_url, img_src, allow_external=True)
+                        logger.debug(f"beedeals image extracted: {image} from src={img_src}")
+        
         # For zuzu and buywithus: images are in figure > a > img
         if not image and source_id in ["zuzu", "buywithus"]:
             figure_el = node.find("figure")
@@ -476,13 +540,50 @@ def extract_items(html: str, base_url: str, selector: str, source_id: Optional[s
                             image = resolve_url(base_url, img_src, allow_external=True)
                             break
 
-        # Link from first a[href]
-        link_el = node.find("a", href=True)
-        link = resolve_url(base_url, link_el["href"]) if link_el else None
+        # Link extraction - source-specific
+        link = None
+        
+        # For beedeals: link is in .pinPrice a with bo-href or href, or construct from ng-click
+        if source_id == "beedeals":
+            pin_price_a = node.select_one(".pinPrice a")
+            if pin_price_a:
+                link_href = pin_price_a.get("bo-href") or pin_price_a.get("href")
+                if link_href:
+                    link = resolve_url(base_url, link_href, allow_external=True)
+            # Fallback: try to get link from any a tag with go.php
+            if not link:
+                all_links = node.find_all("a", href=True)
+                for link_el in all_links:
+                    link_href = link_el.get("href") or link_el.get("bo-href")
+                    if link_href and ("go.php" in link_href or "bee.deals" in link_href):
+                        link = resolve_url(base_url, link_href, allow_external=True)
+                        break
+            # Another fallback: construct from topHolder ng-click which has alphaId
+            if not link:
+                top_holder = node.select_one(".topHolder")
+                if top_holder:
+                    ng_click = top_holder.get("ng-click")
+                    if ng_click and "alphaId" in ng_click:
+                        # Try to find any href in the node
+                        link_el = node.find("a", href=True)
+                        if link_el:
+                            link_href = link_el.get("href")
+                            if link_href:
+                                link = resolve_url(base_url, link_href, allow_external=True)
+        
+        # Standard approach for other sources
+        if not link:
+            link_el = node.find("a", href=True)
+            link = resolve_url(base_url, link_el["href"]) if link_el else None
 
         # drop items where all fields are null
-        if not any([title, link, price]):
-            continue
+        # For beedeals, require at least title or link (price is optional)
+        if source_id == "beedeals":
+            if not title and not link:
+                continue
+        else:
+            if not any([title, link, price]):
+                continue
 
         # dedupe by canonical link or normalized title
         dedupe_key = link or (title.lower() if title else None)
@@ -503,12 +604,23 @@ def extract_items(html: str, base_url: str, selector: str, source_id: Optional[s
 async def fetch_page_html(context, url: str, selector: Optional[str] = None) -> str:
     page = await context.new_page()
     try:
-        await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-        if selector:
+        # For beedeals (AngularJS app), wait for network to be idle and content to load
+        if "bee.deals" in url:
+            await page.goto(url, wait_until="networkidle", timeout=60000)
+            # Wait for AngularJS to render the pins
             try:
-                await page.wait_for_selector(selector, timeout=5000)
+                await page.wait_for_selector(".pin.nfDealItemsPin, .pin", timeout=10000)
+                # Give AngularJS a bit more time to fully render
+                await page.wait_for_timeout(2000)
             except Exception:
-                pass  # best-effort only
+                logger.warning("beedeals: Timeout waiting for pins, continuing anyway")
+        else:
+            await page.goto(url, wait_until="domcontentloaded", timeout=60000)
+            if selector:
+                try:
+                    await page.wait_for_selector(selector, timeout=5000)
+                except Exception:
+                    pass  # best-effort only
         html = await page.content()
         return html
     finally:
@@ -528,7 +640,18 @@ async def scrape_source(context, source_id: str) -> List[Dict[str, Optional[str]
     try:
         html = await fetch_page_html(context, url, selector)
         items = extract_items(html, url, selector, source_id=source_id)
-    except Exception:
+        logger.info(f"{source_id}: Extracted {len(items)} items")
+        if source_id == "beedeals" and len(items) == 0:
+            # Debug: check if selector found any nodes
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(html or "", "lxml")
+            nodes = soup.select(selector)
+            logger.warning(f"beedeals: Found {len(nodes)} nodes with selector '{selector}', but extracted 0 items")
+            if len(nodes) > 0:
+                # Log first node structure for debugging
+                logger.debug(f"beedeals: First node HTML snippet: {str(nodes[0])[:500]}")
+    except Exception as e:
+        logger.error(f"{source_id}: Scraping failed: {e}", exc_info=True)
         items = []
 
     _cache[cache_key] = items

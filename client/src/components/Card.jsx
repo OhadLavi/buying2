@@ -1,36 +1,35 @@
 import React from 'react';
+import '../App.css';
 
-export default function Card({ deal }) {
-  const { title, price, link } = deal || {};
+export default function Card({ deal, isRTL = false, viewMode = 'cards' }) {
+  const { title, price, link, image } = deal || {};
+  const isTileView = viewMode === 'tiles';
+  
   return (
-    <div style={{
-      border: '1px solid #e5e7eb',
-      borderRadius: 8,
-      padding: 12,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12
-    }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{
-          fontWeight: 600,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
-        }} title={title || ''}>
+    <div className={`deal-card ${isTileView ? 'deal-tile' : 'deal-card-view'}`}>
+      {image && (
+        <div className="deal-image-wrapper">
+          <img 
+            src={image} 
+            alt={title || 'Deal image'} 
+            className="deal-image"
+            loading="lazy"
+            onError={(e) => {
+              // Hide image wrapper if image fails to load
+              const wrapper = e.target.closest('.deal-image-wrapper');
+              if (wrapper) {
+                wrapper.style.display = 'none';
+              }
+            }}
+          />
+        </div>
+      )}
+      <div className="deal-content">
+        <div className="deal-title" title={title || ''}>
           {title || 'Untitled'}
         </div>
         {price && (
-          <span style={{
-            display: 'inline-block',
-            marginTop: 6,
-            backgroundColor: '#eef2ff',
-            color: '#3730a3',
-            fontSize: 12,
-            padding: '2px 8px',
-            borderRadius: 9999
-          }}>
+          <span className="deal-price">
             {price}
           </span>
         )}
@@ -40,21 +39,16 @@ export default function Card({ deal }) {
           href={link}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            backgroundColor: '#111827',
-            color: '#ffffff',
-            padding: '8px 12px',
-            borderRadius: 6,
-            textDecoration: 'none',
-            whiteSpace: 'nowrap'
-          }}
+          className="deal-link"
         >
-          Open
+          {isRTL ? 'פתח' : 'Open'}
         </a>
       )}
     </div>
   );
 }
+
+
 
 
 
