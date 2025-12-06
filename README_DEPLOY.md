@@ -15,7 +15,7 @@ Render is currently detecting this as a Node.js project. You need to configure i
    
    **Build Command**: 
    ```bash
-   pip install -r requirements.txt && playwright install chromium && playwright install-deps chromium && npm install
+   pip install -r requirements.txt && playwright install chromium && npm install
    ```
    
    **Start Command**: 

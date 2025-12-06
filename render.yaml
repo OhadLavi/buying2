@@ -5,7 +5,6 @@ services:
     buildCommand: |
       pip install -r requirements.txt
       playwright install chromium
-      playwright install-deps chromium
       npm install
     startCommand: python server/app.py
     envVars:

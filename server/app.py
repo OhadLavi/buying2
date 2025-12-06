@@ -675,6 +675,10 @@ async def lifespan(app: FastAPI):
                 "--no-sandbox",
                 "--disable-setuid-sandbox",
                 "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-software-rasterizer",
+                "--disable-extensions",
+                "--single-process",  # Run in single process mode for restricted environments
             ],
         )
         app.state.context = await app.state.browser.new_context(user_agent=DESKTOP_CHROME_UA)
