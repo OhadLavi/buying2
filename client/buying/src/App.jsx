@@ -576,7 +576,7 @@ export default function App() {
           </button>
           
           {/* Site buttons */}
-          {sections.map(sec => {
+          {SECTIONS.map(sec => {
             const isOnlyThisSource = Object.keys(selectedSources).every(
               key => key === sec.key ? selectedSources[key] : !selectedSources[key]
             );
