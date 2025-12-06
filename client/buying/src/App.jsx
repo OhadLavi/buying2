@@ -4,11 +4,16 @@ import './App.css';
 
 const DEFAULT_DATA = { deal4real: [], zuzu: [], buywithus: [] };
 
+const SECTIONS = [
+  { key: 'deal4real', title: 'Deal4Real', titleHe: 'Deal4Real' },
+  { key: 'zuzu', title: 'Zuzu Deals', titleHe: 'Zuzu Deals' },
+  { key: 'buywithus', title: 'BuyWithUs', titleHe: 'BuyWithUs' },
+];
+
 export default function App() {
   const [data, setData] = useState(DEFAULT_DATA);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sourceErrors, setSourceErrors] = useState({});
   const [lastUpdated, setLastUpdated] = useState(null);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
@@ -101,7 +106,6 @@ export default function App() {
   const fetchData = async () => {
     setLoading(true);
     setError(null);
-    setSourceErrors({});
     try {
       const url = `${apiBase}/scrape?sources=deal4real,zuzu,buywithus`;
       const res = await fetch(url);
@@ -114,19 +118,7 @@ export default function App() {
         buywithus: Array.isArray(json.buywithus) ? json.buywithus : [],
       };
       
-      const newSourceErrors = {};
-      if (newData.deal4real.length === 0) {
-        newSourceErrors.deal4real = 'לא נמצאו עסקאות או שגיאה בשרת / No deals found or scraping failed';
-      }
-      if (newData.zuzu.length === 0) {
-        newSourceErrors.zuzu = 'לא נמצאו עסקאות או שגיאה בשרת / No deals found or scraping failed';
-      }
-      if (newData.buywithus.length === 0) {
-        newSourceErrors.buywithus = 'לא נמצאו עסקאות או שגיאה בשרת / No deals found or scraping failed';
-      }
-      
       setData(newData);
-      setSourceErrors(newSourceErrors);
       setLastUpdated(new Date());
     } catch (e) {
       setError(e?.message || 'נכשל ביבוא המידע / Failed to fetch');
@@ -140,16 +132,10 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const sections = [
-    { key: 'deal4real', title: 'Deal4Real', titleHe: 'Deal4Real' },
-    { key: 'zuzu', title: 'Zuzu Deals', titleHe: 'Zuzu Deals' },
-    { key: 'buywithus', title: 'BuyWithUs', titleHe: 'BuyWithUs' },
-  ];
-
   // Combine all deals from all sources into one array
   const allDeals = useMemo(() => {
     const combined = [];
-    sections.forEach(sec => {
+    SECTIONS.forEach(sec => {
       if (data[sec.key] && Array.isArray(data[sec.key])) {
         data[sec.key].forEach(deal => {
           combined.push({ ...deal, site: sec.key });
@@ -175,7 +161,7 @@ export default function App() {
       // Price range filter
       if (minPrice || maxPrice) {
         const priceStr = deal.price || '';
-        const priceMatch = priceStr.match(/[\d,\.]+/);
+        const priceMatch = priceStr.match(/[\d,.]+/);
         if (priceMatch) {
           const priceNum = parseFloat(priceMatch[0].replace(/,/g, ''));
           if (minPrice && priceNum < parseFloat(minPrice)) return false;
@@ -461,7 +447,7 @@ export default function App() {
                   {language === 'he' ? 'מקורות:' : 'Sources:'}
                 </div>
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  {sections.map(sec => (
+                  {SECTIONS.map(sec => (
                     <label key={sec.key} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                       <input
                         type="checkbox"
