@@ -18,6 +18,11 @@ Render is currently detecting this as a Node.js project. You need to configure i
    pip install -r requirements.txt && playwright install chromium && npm install
    ```
    
+   **Pre-Deploy Command** (Optional but recommended):
+   ```bash
+   python -m playwright install chromium
+   ```
+   
    **Start Command**: 
    ```bash
    python server/app.py

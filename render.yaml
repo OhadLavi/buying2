@@ -6,6 +6,7 @@ services:
       pip install -r requirements.txt
       playwright install chromium
       npm install
+    preDeployCommand: python -m playwright install chromium
     startCommand: python server/app.py
     envVars:
       - key: PORT

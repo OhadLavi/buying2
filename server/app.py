@@ -664,11 +664,37 @@ async def scrape_source(context, source_id: str) -> List[Dict[str, Optional[str]
 async def lifespan(app: FastAPI):
     # Startup
     from playwright.async_api import async_playwright
+    import subprocess
+    import sys
+
+    logger.info("Checking Playwright browsers...")
+    # Ensure Chromium is installed (in case build cache didn't persist)
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "chromium"],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+        if result.returncode == 0:
+            logger.info("Chromium installation verified/updated")
+        else:
+            logger.warning(f"Playwright install returned code {result.returncode}: {result.stderr}")
+    except Exception as e:
+        logger.warning(f"Could not verify Chromium installation: {e}")
 
     logger.info("Launching Chromium...")
     try:
         app.state.playwright = await async_playwright().start()
         chromium = app.state.playwright.chromium
+        
+        # Try to get the executable path for debugging
+        try:
+            exec_path = chromium.executable_path
+            logger.info(f"Chromium executable path: {exec_path}")
+        except Exception as e:
+            logger.warning(f"Could not get Chromium executable path: {e}")
+        
         app.state.browser = await chromium.launch(
             headless=True,
             args=[
@@ -685,6 +711,13 @@ async def lifespan(app: FastAPI):
         logger.info("Chromium launched successfully")
     except Exception as e:
         logger.error("Failed to launch Chromium: %s", e)
+        # Try to provide more helpful error message
+        import os
+        cache_dir = os.path.expanduser("~/.cache/ms-playwright")
+        if os.path.exists(cache_dir):
+            logger.error(f"Playwright cache exists at: {cache_dir}")
+            for item in os.listdir(cache_dir):
+                logger.error(f"  Found: {item}")
         raise
 
     yield
