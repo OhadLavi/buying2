@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dir: ./client/buying
+          cache-dependency-path: './client/buying/package-lock.json'
 
       - name: Install dependencies
         working-directory: ./client/buying
