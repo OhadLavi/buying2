@@ -39,6 +39,9 @@ jobs:
           REACT_APP_API_URL: https://buying2.onrender.com
         run: npm run build
 
+      - name: Ensure .nojekyll exists
+        run: touch ./client/buying/build/.nojekyll
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
