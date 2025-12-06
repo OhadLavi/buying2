@@ -37,6 +37,11 @@ jobs:
           cd client/buying
           REACT_APP_API_URL=https://buying2.onrender.com npm run build
 
+      - name: Verify build output
+        run: |
+          ls -la client/buying/build/
+          echo "Build directory contents verified"
+
       - name: Ensure .nojekyll exists
         run: touch client/buying/build/.nojekyll
 
