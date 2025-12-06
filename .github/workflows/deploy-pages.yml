@@ -22,25 +22,58 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: List directory structure
+        run: |
+          echo "=== Root directory ==="
+          ls -la
+          echo ""
+          echo "=== Client directory ==="
+          ls -la client/ || echo "No client directory found"
+          echo ""
+          echo "=== Looking for React app ==="
+          find . -name "package.json" -type f | head -10
+          echo ""
+          echo "=== Checking if client/buying exists ==="
+          if [ -d "client/buying" ]; then
+            echo "✓ client/buying directory exists"
+            ls -la client/buying/
+          else
+            echo "✗ client/buying directory NOT found"
+            echo "Available directories:"
+            find . -type d -maxdepth 2 | sort
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '22'
 
       - name: Install dependencies
+        working-directory: client/buying
         run: |
-          cd client/buying
+          pwd
+          ls -la
           npm install
 
       - name: Build
+        working-directory: client/buying
+        env:
+          REACT_APP_API_URL: https://buying2.onrender.com
         run: |
-          cd client/buying
-          REACT_APP_API_URL=https://buying2.onrender.com npm run build
+          npm run build
 
       - name: Verify build output
         run: |
-          ls -la client/buying/build/
-          echo "Build directory contents verified"
+          echo "=== Build directory contents ==="
+          ls -la client/buying/build/ || echo "Build directory not found"
+          echo ""
+          echo "=== Checking for index.html ==="
+          if [ -f "client/buying/build/index.html" ]; then
+            echo "✓ index.html found"
+          else
+            echo "✗ index.html NOT found"
+            exit 1
+          fi
 
       - name: Ensure .nojekyll exists
         run: touch client/buying/build/.nojekyll
