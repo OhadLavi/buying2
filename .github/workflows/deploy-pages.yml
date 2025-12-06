@@ -28,17 +28,17 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        working-directory: ./client/buying
-        run: npm install
+        run: |
+          cd client/buying
+          npm install
 
       - name: Build
-        working-directory: ./client/buying
-        env:
-          REACT_APP_API_URL: https://buying2.onrender.com
-        run: npm run build
+        run: |
+          cd client/buying
+          REACT_APP_API_URL=https://buying2.onrender.com npm run build
 
       - name: Ensure .nojekyll exists
-        run: touch ./client/buying/build/.nojekyll
+        run: touch client/buying/build/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
