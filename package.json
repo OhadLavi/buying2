@@ -6,7 +6,8 @@
     "server": "python server/app.py",
     "client": "npm start --prefix client/buying",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "start": "npm run dev"
+    "start": "npm run server",
+    "build": "cd client/buying && npm install && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

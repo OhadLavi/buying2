@@ -765,12 +765,15 @@ async def scrape(sources: str = Query("deal4real,zuzu,buywithus")) -> Dict[str, 
 if __name__ == "__main__":
     import uvicorn
     
+    # Get port from environment variable (Render sets this) or default to 3001
+    port = int(os.getenv("PORT", 3001))
+    
     # Run without reload to avoid event loop issues
     # For development with reload, use: uvicorn app:app --reload-dir . --host 0.0.0.0 --port 3001
     uvicorn.run(
         app,  # Pass the app instance directly, not the string
         host="0.0.0.0",
-        port=3001,
+        port=port,
         reload=False  # Disable reload to ensure event loop policy works
     )
 

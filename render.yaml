@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: deals-aggregator
+    env: python
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install chromium
+      npm install
+      cd client/buying && npm install && npm run build && cd ../..
+    startCommand: python server/app.py
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: PYTHON_VERSION
+        value: 3.13
+
