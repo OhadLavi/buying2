@@ -2,6 +2,19 @@
 
 A single-repo fullstack app that scrapes deals from Deal4Real, Zuzu Deals, and BuyWithUs via a FastAPI backend (Playwright + BeautifulSoup) and renders them in a React (Create React App) frontend.
 
+## 🌐 Live Demo
+
+**Frontend**: [https://ohadlavi.github.io/buying2/](https://ohadlavi.github.io/buying2/)  
+**Backend API**: [https://buying2.onrender.com](https://buying2.onrender.com)
+
+## 📸 Screenshot
+
+![Deals Aggregator Screenshot](screenshots/deals-aggregator.png)
+
+*The app features a modern dark/light theme toggle, bilingual support (Hebrew/English), advanced filtering options, grid/list view modes, and a modal popup for viewing deals.*
+
+> **Note**: To add the screenshot, navigate to [https://ohadlavi.github.io/buying2/](https://ohadlavi.github.io/buying2/), take a screenshot, and save it as `screenshots/deals-aggregator.png`.
+
 ## Project Structure
 
 - `server/`: FastAPI app
@@ -69,7 +82,7 @@ python -m playwright install chromium
 3. Install Node dependencies:
 ```bash
 npm install
-cd client && npm install
+cd client/buying && npm install
 ```
 
 ### Run backend
@@ -86,17 +99,32 @@ npm run server
 
 ## Frontend
 
+- **Location**: `client/buying/` (React app)
 - CRA app on port 3000
 - Env var `REACT_APP_API_URL` to point to API; fallback to `http://localhost:3001`
-- `App.jsx` fetches `/scrape?sources=deal4real,zuzu,buywithus`, shows three sections, skeletons during loading, empty messages, errors, and `Last updated hh:mm:ss`.
-- `Card.jsx` renders title (truncated), price badge, and an external link (`target="_blank" rel="noopener noreferrer"`).
+- Modern UI features:
+  - 🌙 Dark/Light theme toggle with persistent preference
+  - 🌍 Bilingual support (Hebrew/English) with RTL/LTR layout
+  - 🔍 Advanced filtering: search by title, filter by source, price range
+  - 📊 Grid/List view modes with persistent preference
+  - 🎯 Quick source filter buttons (All, Deal4Real, Zuzu Deals, BuyWithUs)
+  - 🖼️ Modal popup for viewing deals in an iframe
+  - ⏰ Last updated timestamp with manual refresh
+  - 🎨 Responsive design with modern card-based layout
+- `App.jsx` fetches `/scrape?sources=deal4real,zuzu,buywithus`, combines all deals, applies filters, and displays them in a unified grid/list view
+- `Card.jsx` renders product image, title, source tag, price, and a "View Deal" button that opens in a modal
 
 ### Run frontend
 
 ```bash
-cd client
+cd client/buying
 npm install
 npm start
+```
+
+Or from root:
+```bash
+npm run client
 ```
 
 ## Root scripts
