@@ -33,12 +33,12 @@ jobs:
           echo "=== Looking for React app ==="
           find . -name "package.json" -type f | head -10
           echo ""
-          echo "=== Checking if client/buying exists ==="
-          if [ -d "client/buying" ]; then
-            echo "✓ client/buying directory exists"
-            ls -la client/buying/
+          echo "=== Checking if client directory exists ==="
+          if [ -d "client" ]; then
+            echo "✓ client directory exists"
+            ls -la client/
           else
-            echo "✗ client/buying directory NOT found"
+            echo "✗ client directory NOT found"
             echo "Available directories:"
             find . -type d -maxdepth 2 | sort
           fi
@@ -49,14 +49,14 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        working-directory: client/buying
+        working-directory: client
         run: |
           pwd
           ls -la
           npm install
 
       - name: Build
-        working-directory: client/buying
+        working-directory: client
         env:
           REACT_APP_API_URL: https://buying2.onrender.com
         run: |
@@ -65,10 +65,10 @@ jobs:
       - name: Verify build output
         run: |
           echo "=== Build directory contents ==="
-          ls -la client/buying/build/ || echo "Build directory not found"
+          ls -la client/build/ || echo "Build directory not found"
           echo ""
           echo "=== Checking for index.html ==="
-          if [ -f "client/buying/build/index.html" ]; then
+          if [ -f "client/build/index.html" ]; then
             echo "✓ index.html found"
           else
             echo "✗ index.html NOT found"
@@ -76,7 +76,7 @@ jobs:
           fi
 
       - name: Ensure .nojekyll exists
-        run: touch client/buying/build/.nojekyll
+        run: touch client/build/.nojekyll
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -84,7 +84,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './client/buying/build'
+          path: './client/build'
 
   deploy:
     environment:

@@ -82,7 +82,7 @@ python -m playwright install chromium
 3. Install Node dependencies:
 ```bash
 npm install
-cd client/buying && npm install
+cd client && npm install
 ```
 
 ### Run backend
@@ -99,7 +99,7 @@ npm run server
 
 ## Frontend
 
-- **Location**: `client/buying/` (React app)
+- **Location**: `client/` (React app - new design)
 - CRA app on port 3000
 - Env var `REACT_APP_API_URL` to point to API; fallback to `http://localhost:3001`
 - Modern UI features:
@@ -117,7 +117,7 @@ npm run server
 ### Run frontend
 
 ```bash
-cd client/buying
+cd client
 npm install
 npm start
 ```

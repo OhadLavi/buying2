@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "scripts": {
     "server": "python server/app.py",
-    "client": "npm start --prefix client/buying",
+    "client": "npm start --prefix client",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "start": "npm run server",
-    "build": "cd client/buying && npm install && npm run build"
+    "build": "cd client && npm install && npm run build"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
